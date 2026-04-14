@@ -27,6 +27,7 @@ class UDPServer {
 
         try (DatagramSocket serverSocket = new DatagramSocket(PORT)) {
             while (true) {
+                //recieve packet
                 byte[] receiveBuffer = new byte[BUFFER_SIZE];
                 DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
                 serverSocket.receive(receivePacket);
@@ -38,9 +39,11 @@ class UDPServer {
                         StandardCharsets.UTF_8
                 ).trim();
 
+                //set client IP
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
 
+                //process message and send response
                 String response = processMessage(message, clientAddress, clientPort);
                 byte[] sendBuffer = response.getBytes(StandardCharsets.UTF_8);
                 DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, clientAddress, clientPort);
@@ -131,8 +134,10 @@ class UDPServer {
                     }
                     result = left / right;
                     break;
+                case "%":
+                    result = left % right;
                 default:
-                    return "ERROR|Unsupported operator. Use +, -, *, /";
+                    return "ERROR|Unsupported operator. Use +, -, *, /, %";
             }
 
             info.requestCount++;

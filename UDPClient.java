@@ -89,10 +89,12 @@ class UDPClient {
 
     private static String sendAndReceive(DatagramSocket socket, InetAddress serverAddress, String message)
             throws IOException {
+        //send packet
         byte[] sendBuffer = message.getBytes(StandardCharsets.UTF_8);
         DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, serverAddress, SERVER_PORT);
         socket.send(sendPacket);
 
+        //recieve packet
         byte[] receiveBuffer = new byte[BUFFER_SIZE];
         DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
         socket.receive(receivePacket);
