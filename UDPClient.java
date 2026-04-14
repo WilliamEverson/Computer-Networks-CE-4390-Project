@@ -1,38 +1,102 @@
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
 class UDPClient {
-    public static void main(String args[]) throws Exception
-    {
-      System.out.println("Client is running!");
-      byte[] sendData = new byte[1024];
-      byte[] receiveData = new byte[1024];
-      DatagramSocket clientSocket = new DatagramSocket();
+    private static final String SERVER_IP = "127.0.0.1";
+    private static final int SERVER_PORT = 9876;
+    private static final int BUFFER_SIZE = 1024;
 
+    public static void main(String[] args) {
+        System.out.println("UDP Math Client is running!");
+        System.out.println("Server: " + SERVER_IP + ":" + SERVER_PORT);
 
-      BufferedReader inFromUser =
-        new BufferedReader(new InputStreamReader(System.in));
+        try (DatagramSocket clientSocket = new DatagramSocket();
+             BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in))) {
 
-      String sentence = inFromUser.readLine();
-      sendData = sentence.getBytes();
+            InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
+            Random random = new Random();
 
-      InetAddress IPAddress = InetAddress.getByName("127.0.0.1");
+            System.out.print("Enter your client name: ");
+            String clientName = userInput.readLine().trim();
+            while (clientName.isEmpty()) {
+                System.out.print("Name cannot be empty. Enter your client name: ");
+                clientName = userInput.readLine().trim();
+            }
 
+            String joinResponse = sendAndReceive(clientSocket, serverAddress, "JOIN|" + clientName);
+            System.out.println("SERVER -> " + joinResponse);
 
-      DatagramPacket sendPacket =
-    	         new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+            if (!joinResponse.startsWith("ACK|")) {
+                System.out.println("Could not join server. Exiting.");
+                return;
+            }
 
-      clientSocket.send(sendPacket);
+            System.out.println("\nEnter calculations in this format: <number> <operator> <number>");
+            System.out.println("Example: 5 + 3");
+            System.out.println("Type 'quit' to disconnect.\n");
 
-      DatagramPacket receivePacket =
-    	         new DatagramPacket(receiveData, receiveData.length);
+            int successfulRequests = 0;
+            while (true) {
+                System.out.print("calc> ");
+                String input = userInput.readLine();
+                if (input == null) {
+                    break;
+                }
 
-      clientSocket.receive(receivePacket);
+                input = input.trim();
+                if (input.equalsIgnoreCase("quit")) {
+                    String quitResponse = sendAndReceive(clientSocket, serverAddress, "QUIT|" + clientName);
+                    System.out.println("SERVER -> " + quitResponse);
+                    break;
+                }
 
-    	      String modifiedSentence =
-    	          new String(receivePacket.getData());
+                String[] tokens = input.split("\\s+");
+                if (tokens.length != 3) {
+                    System.out.println("Invalid format. Use: <number> <operator> <number>");
+                    continue;
+                }
 
-    	      System.out.println("FROM SERVER:" + modifiedSentence);
-    	      clientSocket.close();
-    	      }
-    	}
+                String left = tokens[0];
+                String operator = tokens[1];
+                String right = tokens[2];
+
+                String request = String.format("CALC|%s|%s|%s|%s", clientName, left, operator, right);
+
+                int delayMs = 1000 + random.nextInt(3000);
+                System.out.println("Waiting " + delayMs + " ms before sending request...");
+                Thread.sleep(delayMs);
+
+                String response = sendAndReceive(clientSocket, serverAddress, request);
+                System.out.println("SERVER -> " + response);
+
+                if (response.startsWith("RESULT|")) {
+                    successfulRequests++;
+                    if (successfulRequests == 3) {
+                        System.out.println("You have completed at least 3 math requests.");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Client error: " + e.getMessage());
+        }
+    }
+
+    private static String sendAndReceive(DatagramSocket socket, InetAddress serverAddress, String message)
+            throws IOException {
+        byte[] sendBuffer = message.getBytes(StandardCharsets.UTF_8);
+        DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, serverAddress, SERVER_PORT);
+        socket.send(sendPacket);
+
+        byte[] receiveBuffer = new byte[BUFFER_SIZE];
+        DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+        socket.receive(receivePacket);
+
+        return new String(receivePacket.getData(), 0, receivePacket.getLength(), StandardCharsets.UTF_8).trim();
+    }
+}
