@@ -6,7 +6,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
-
 class UDPClient {
     private static final String SERVER_IP = "127.0.0.1";
     private static final int SERVER_PORT = 9876;
@@ -50,14 +49,14 @@ class UDPClient {
                 }
 
                 input = input.trim();
-                if (input.equalsIgnoreCase("quit")) {
+                if (input.equalsIgnoreCase("quit") || input.equalsIgnoreCase("exit")) {
                     String quitResponse = sendAndReceive(clientSocket, serverAddress, "QUIT|" + clientName);
                     System.out.println("SERVER -> " + quitResponse);
                     break;
                 }
 
-                String[] tokens = input.split("\\s+");
-                if (tokens.length != 3) {
+                String[] tokens = input.replaceAll("\\s+", "").split(""); //remove all tabs, spaces, and new lines and split into array
+                if (tokens.length < 3) {
                     System.out.println("Invalid format. Use: <number> <operator> <number>");
                     continue;
                 }
@@ -68,7 +67,7 @@ class UDPClient {
 
                 String request = String.format("CALC|%s|%s|%s|%s", clientName, left, operator, right);
 
-                int delayMs = 1000 + random.nextInt(3000);
+                int delayMs = 10 + random.nextInt(1000);
                 System.out.println("Waiting " + delayMs + " ms before sending request...");
                 Thread.sleep(delayMs);
 
@@ -77,12 +76,9 @@ class UDPClient {
 
                 if (response.startsWith("RESULT|")) {
                     successfulRequests++;
-                    if (successfulRequests == 3) {
-                        System.out.println("You have completed at least 3 math requests.");
-                    }
                 }
             }
-        } catch (Exception e) {
+        } catch (Exception e) { //if user input a char that isn't a number, send error msg
             System.err.println("Client error: " + e.getMessage());
         }
     }
@@ -94,7 +90,7 @@ class UDPClient {
         DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, serverAddress, SERVER_PORT);
         socket.send(sendPacket);
 
-        //recieve packet
+        //receive packet
         byte[] receiveBuffer = new byte[BUFFER_SIZE];
         DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
         socket.receive(receivePacket);
