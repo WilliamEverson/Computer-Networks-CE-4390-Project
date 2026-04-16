@@ -96,11 +96,11 @@ class UDPServer {
             log(String.format("REJOIN| client=%s | ip=%s | port=%d", clientName, existing.ipAddress, existing.port));
         }
 
-        return "ACK|Welcome " + clientName;
+        return "CONNECTED|Welcome " + clientName;
     }
 
     private static String handleCalc(String[] parts, InetAddress address, int port) {
-        if (parts.length != 5) {
+        if (parts.length > 5 || parts.length % 2 != 0) {
             return "ERROR|CALC format: CALC|<clientName>|<number>|<operator>|<number>";
         }
 
@@ -113,9 +113,16 @@ class UDPServer {
         }
 
         try {
-            double left = Double.parseDouble(parts[2].trim());
+            StringBuilder leftStr = new StringBuilder();
+            double left = 0, right = 0;
+            for (int i = 2; i < parts.length; i++){
+                leftStr.append(parts[i]);
+                //TODO: turn string to double with both left and right side until end of parts
+                if (parts[i + 1] = )
+                left = Double.parseDouble(leftStr.toString());
+            }
             String operator = parts[3].trim();
-            double right = Double.parseDouble(parts[4].trim());
+            right = Double.parseDouble(parts[4].trim());
 
             double result;
             switch (operator) {
@@ -149,7 +156,7 @@ class UDPServer {
 
             return "RESULT|" + expression + " = " + formatNumber(result);
         } catch (NumberFormatException e) {
-            return "ERROR|Operands must be numeric";
+            return "ERROR|Operands must be number";
         }
     }
 
