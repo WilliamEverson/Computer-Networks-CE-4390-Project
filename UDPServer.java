@@ -27,7 +27,6 @@ class UDPServer {
 
         try (DatagramSocket serverSocket = new DatagramSocket(PORT)) {
             while (true) {
-                //recieve packet
                 byte[] receiveBuffer = new byte[BUFFER_SIZE];
                 DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
                 serverSocket.receive(receivePacket);
@@ -39,11 +38,9 @@ class UDPServer {
                         StandardCharsets.UTF_8
                 ).trim();
 
-                //set client IP
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
 
-                //process message and send response
                 String response = processMessage(message, clientAddress, clientPort);
                 byte[] sendBuffer = response.getBytes(StandardCharsets.UTF_8);
                 DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, clientAddress, clientPort);
@@ -100,7 +97,7 @@ class UDPServer {
     }
 
     private static String handleCalc(String[] parts, InetAddress address, int port) {
-        if (parts.length > 5 || parts.length % 2 != 0) {
+        if (parts.length != 5) {
             return "ERROR|CALC format: CALC|<clientName>|<number>|<operator>|<number>";
         }
 
@@ -113,16 +110,9 @@ class UDPServer {
         }
 
         try {
-            StringBuilder leftStr = new StringBuilder();
-            double left = 0, right = 0;
-            for (int i = 2; i < parts.length; i++){
-                leftStr.append(parts[i]);
-                //TODO: turn string to double with both left and right side until end of parts
-                if (parts[i + 1] = )
-                left = Double.parseDouble(leftStr.toString());
-            }
+            double left = Double.parseDouble(parts[2].trim());
             String operator = parts[3].trim();
-            right = Double.parseDouble(parts[4].trim());
+            double right = Double.parseDouble(parts[4].trim());
 
             double result;
             switch (operator) {
@@ -141,10 +131,8 @@ class UDPServer {
                     }
                     result = left / right;
                     break;
-                case "%":
-                    result = left % right;
                 default:
-                    return "ERROR|Unsupported operator. Use +, -, *, /, %";
+                    return "ERROR|Unsupported operator. Use +, -, *, /";
             }
 
             info.requestCount++;
@@ -156,7 +144,7 @@ class UDPServer {
 
             return "RESULT|" + expression + " = " + formatNumber(result);
         } catch (NumberFormatException e) {
-            return "ERROR|Operands must be number";
+            return "ERROR|Operands must be numeric";
         }
     }
 

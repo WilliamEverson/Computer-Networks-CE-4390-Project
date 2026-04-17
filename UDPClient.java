@@ -31,7 +31,7 @@ class UDPClient {
             String joinResponse = sendAndReceive(clientSocket, serverAddress, "JOIN|" + clientName);
             System.out.println("SERVER -> " + joinResponse);
 
-            if (!joinResponse.startsWith("ACK|")) {
+            if (!joinResponse.startsWith("CONNECTED|")) {
                 System.out.println("Could not join server. Exiting.");
                 return;
             }
